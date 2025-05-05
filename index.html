@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="he">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance Reporting System</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body dir="rtl">
+
+    <h1>מערכת דיווח נוכחות</h1>
+    <div class="input-container">
+        <input type="date" id="report_date">
+        <input type="time" id="report_time">
+    </div>
+    <div class="button-container">
+        <button id="loginButton">כניסה</button>
+        <button id="logoutButton">יציאה</button>
+    </div>
+    <div id="calcAndTable">
+        <div id="lastReports">
+            <h2>20 הדיווחים האחרונים</h2>
+            <div class="table-container">
+                <table id="reportsTable">
+                    <thead>
+                        <tr>
+                            <th>סוג דיווח</th>
+                            <th>תאריך</th>
+                            <th>שעה</th>
+                            <th>תאריך יצירה</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+        <div id="calc">
+            <h2>חישוב שעות עבודה חודשיות</h2>
+            <div class="input-container">
+                <select id="monthPicker">
+                    <option value="1">ינואר</option>
+                    <option value="2">פברואר</option>
+                    <option value="3">מרץ</option>
+                    <option value="4">אפריל</option>
+                    <option value="5">מאי</option>
+                    <option value="6">יוני</option>
+                    <option value="7">יולי</option>
+                    <option value="8">אוגוסט</option>
+                    <option value="9">ספטמבר</option>
+                    <option value="10">אוקטובר</option>
+                    <option value="11">נובמבר</option>
+                    <option value="12">דצמבר</option>
+                </select>
+
+                <select id="yearPicker">
+                    <option value="2015">2015</option>
+                    <option value="2016">2016</option>
+                    <option value="2017">2017</option>
+                    <option value="2018">2018</option>
+                    <option value="2019">2019</option>
+                    <option value="2020">2020</option>
+                    <option value="2021">2021</option>
+                    <option value="2022">2022</option>
+                    <option value="2023">2023</option>
+                    <option value="2024">2024</option>
+                    <option value="2025">2025</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                    <option value="2029">2029</option>
+                    <option value="2030">2030</option>
+                    <option value="2031">2031</option>
+                    <option value="2032">2032</option>
+                    <option value="2033">2033</option>
+                    <option value="2034">2034</option>
+                    <option value="2035">2035</option>
+
+                </select>
+            </div>
+
+            <button id="calculateHoursButton">חישוב</button>
+            <div id="monthlyHoursResult"></div>
+        </div>
+
+    </div>
+    <script>
+        $(document).ready(function () {
+            const now = new Date();
+
+            // Set default date to current date in YYYY-MM-DD format
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0'); 
+            const day = String(now.getDate()).padStart(2, '0');
+            $('#report_date').val(`${year}-${month}-${day}`);
+
+            // Set default time to current time in HH:MM format
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            $('#report_time').val(`${hours}:${minutes}`);
+
+            $('#monthPicker').val(now.getMonth() + 1); // Set to current month (1-12)
+            $('#yearPicker').val(year);
+
+            fetchReports();
+        });
+
+        function fetchReports() {
+            $.get('attendance.php', function (data) {
+                const reports = JSON.parse(data);
+                const tbody = $('#reportsTable tbody');
+                tbody.empty();
+                reports.forEach(report => {
+                    tbody.append(`<tr>
+                        <td>${report.report_type == 'in' ? 'כניסה' : 'יציאה'}</td>
+                        <td>${report.report_date}</td>
+                        <td>${report.report_time}</td>
+                        <td>${report.created_at}</td>
+                    </tr>`);
+                });
+            });
+        }
+
+        $('#loginButton').click(function () {
+            const date = $('#report_date').val();
+            const time = $('#report_time').val();
+            $.post('attendance.php', {
+                report_type: 'in',
+                report_date: date,
+                report_time: time
+            }, function (response) {
+                alert(response);
+                fetchReports();
+            });
+        });
+
+        $('#logoutButton').click(function () {
+            const date = $('#report_date').val();
+            const time = $('#report_time').val();
+            $.post('attendance.php', {
+                report_type: 'out',
+                report_date: date,
+                report_time: time
+            }, function (response) {
+                alert(response);
+                fetchReports();
+            });
+        });
+        $('#calculateHoursButton').click(function () {
+            const month = $('#monthPicker').val();
+            const year = $('#yearPicker').val();
+            const monthName = $('#monthPicker option:selected').text();
+
+            $.post('attendance.php', {
+                action: 'calculate_hours',
+                month: month,
+                year: year
+            }, function (response) {
+                $('#monthlyHoursResult').text(` סך שעות העבודה לחודש ${monthName}:  ${response} שעות`);
+
+            });
+        });
+
+    </script>
+</body>
+
+</html>
